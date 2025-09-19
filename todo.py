@@ -1,7 +1,12 @@
 import sqlite3
-from bottle import Bottle, template, request, redirect
+from bottle import Bottle, template, request, redirect, static_file
 
 app = Bottle()
+
+#Route usefully for static files
+@app.route('/static/<filepath:path>')
+def server_static(filepath):
+    return static_file(filepath, root='./static')
 
 @app.route('/')
 def index():
@@ -76,6 +81,21 @@ def task_as_json(number):
 @app.error(403)
 def something_went_wrong(error):
     return f'{error}: There is something wrong!'
+
+@app.route('/delete/<number:int>', method=['GET', 'POST'])
+def delete_task(number):
+    if request.POST:
+        with sqlite3.connect('todo.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute("DELETE FROM todo WHERE id LIKE ?", (number,))
+        return template('message.tpl',
+            message=f'The task number {number} was successfully deleted. Goodbye little task...')
+    else:
+        with sqlite3.connect('todo.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute("SELECT task FROM todo WHERE id LIKE ?", (number,))
+            current_data = cursor.fetchone()
+        return template('delete_task', current_data=current_data, number=number)
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug = True, reloader = True)
