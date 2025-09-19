@@ -1,7 +1,11 @@
 import sqlite3
-from bottle import Bottle, template, request
+from bottle import Bottle, template, request, redirect
 
 app = Bottle()
+
+@app.route('/')
+def index():
+    redirect('/todo')
 
 @app.get('/todo')
 def todo_list():
@@ -35,6 +39,43 @@ def new_task():
             message=f'The new task was inserted into the database, the ID is {new_id}')
     else:
         return template('new_task.tpl')
+
+@app.route('/edit/<number:int>', method=['GET', 'POST'])
+def edit_task(number):
+    if request.POST:
+        new_data = request.forms.task.strip()
+        status = request.forms.status.strip()
+        if status == 'open':
+            status = 1
+        else:
+            status = 0
+        with sqlite3.connect('todo.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute("UPDATE todo SET task = ?, status = ? WHERE id LIKE ?", (new_data, status, number))
+        return template('message.tpl',
+            message=f'The task number {number} was successfully updated')
+    else:
+        with sqlite3.connect('todo.db') as connection:
+            cursor = connection.cursor()
+            cursor.execute("SELECT task FROM todo WHERE id LIKE ?", (number,))
+            current_data = cursor.fetchone()
+        return template('edit_task', current_data=current_data, number=number)
+
+@app.route('/as_json/<number:re:[0-9]+>')
+def task_as_json(number):
+    with sqlite3.connect('todo.db') as connection:
+        cursor = connection.cursor()
+        cursor.execute("SELECT id, task, status FROM todo WHERE id LIKE ?", (number,))
+        result = cursor.fetchone()
+    if not result:
+        return {'task': 'This task ID number does not exist!'}
+    else:
+        return {'id': result[0], 'task': result[1], 'status': result[2]}
+
+@app.error(404)
+@app.error(403)
+def something_went_wrong(error):
+    return f'{error}: There is something wrong!'
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=8080, debug = True, reloader = True)
