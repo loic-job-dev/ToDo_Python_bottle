@@ -47,3 +47,6 @@
 <p class="mt-4">
   <a href="/new" class="btn btn-success">Add a new task</a>
 </p>
+<p class="mt-4">
+  <a href="/feed" class="btn btn-success">Give me tasks !</a>
+</p>

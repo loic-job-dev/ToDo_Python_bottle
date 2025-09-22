@@ -1,4 +1,4 @@
-import sqlite3
+import sqlite3, requests
 from bottle import Bottle, template, request, redirect, static_file
 
 app = Bottle()
@@ -7,6 +7,30 @@ app = Bottle()
 @app.route('/static/<filepath:path>')
 def server_static(filepath):
     return static_file(filepath, root='./static')
+
+@app.route('/feed')
+def feed():
+    url = "https://jsonplaceholder.typicode.com/todos"
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        datas = response.json()
+
+        with sqlite3.connect('todo.db') as connection:
+            cursor = connection.cursor()
+
+            for data in datas:
+                task = data["title"]
+                if data["completed"] == False:
+                    status = 0
+                else:
+                    status = 1
+
+                cursor.execute("INSERT INTO todo (task,status) VALUES (?, ?)", (task, status))
+            connection.commit()
+    else:
+        return template('message.tpl', message='Bad connexion to the API, try again later')
+    redirect('/todo')
 
 @app.route('/')
 def index():

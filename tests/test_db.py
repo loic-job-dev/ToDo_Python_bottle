@@ -1,5 +1,6 @@
-import pytest
-import sqlite3
+import pytest, sqlite3
+from webtest import TestApp
+import todo
 
 #test the connexion to the database
 def test_db_connexion():
@@ -23,3 +24,13 @@ def test_db_good_fields():
             assert colnames == ['id', 'task', 'status']
     except sqlite3.Error as e:
         pytest.fail(str(e))
+
+
+@pytest.fixture
+def app():
+    app = TestApp(todo.app)
+    return app
+
+def test_functionnal_API(app):
+    assert app.get('/feed').status == '302 Found'
+
