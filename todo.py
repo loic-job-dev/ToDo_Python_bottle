@@ -1,5 +1,27 @@
-import sqlite3, requests
+import sqlite3, requests, os
 from bottle import Bottle, template, request, redirect, static_file
+
+# Fonction pour initialiser la base de données
+def init_db():
+    db_path = 'todo.db'  # Ajustez le chemin si nécessaire
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # Créez la table todo si elle n'existe pas
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS todo (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            task TEXT NOT NULL,
+            status INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    conn.commit()
+    conn.close()
+
+# Initialisez la DB au démarrage de l'application
+init_db()
 
 app = Bottle()
 
@@ -32,12 +54,22 @@ def feed():
         return template('message.tpl', message='Bad connexion to the API, try again later')
     redirect('/todo')
 
+@app.route('/reset', method=['POST'])
+def reset():
+    with sqlite3.connect('todo.db') as connection:
+        cursor = connection.cursor()
+
+        cursor.execute("DROP TABLE todo")
+    connection.commit()
+    redirect('/todo')
+
 @app.route('/')
 def index():
     redirect('/todo')
 
 @app.get('/todo')
 def todo_list():
+    init_db()
     show = request.query.show or 'open'
     match show:
         case 'open':

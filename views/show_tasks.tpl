@@ -48,5 +48,8 @@
   <a href="/new" class="btn btn-success">Add a new task</a>
 </p>
 <p class="mt-4">
-  <a href="/feed" class="btn btn-success">Give me tasks !</a>
+    <a href="/feed" class="btn btn-success">Give me tasks !</a>
+    <form action="/reset" method="post">
+        <button type="submit" class="btn btn-primary">Let me rest in peace !</button>
+    </form>
 </p>
